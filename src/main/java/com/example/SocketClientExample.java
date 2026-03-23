@@ -21,6 +21,7 @@ public class SocketClientExample {
 	 *  and another thread in charge of receiving information.
 	*/
     public static void main(String[] args) throws UnknownHostException, IOException, ClassNotFoundException, InterruptedException{
+       String line = "";
         //get the localhost IP address, if server is running on some other IP, you need to use that
         InetAddress host = InetAddress.getLocalHost();
         Socket socket = null;
@@ -43,5 +44,13 @@ public class SocketClientExample {
             oos.close();
             Thread.sleep(100);
         }
+ 
+        while(!(line = input.nextLine()).equals("disconnect")){
+            oos.writeObject(line);
+            oos.flush();
+        }
+        oos.writeObject("disconnect");
+        oos.flush();
+        System.out.println("connection closed!");
     }
 }
