@@ -21,11 +21,9 @@ public class ChatServerWithThreads {
     public static final int LISTENING_PORT = 9876;
 
     public static void main(String[] args) {
-        ObjectOutputStream oos = null;  // For sending messages to the client.
-        ObjectInputStream ois = null;   // For receiving messages from the client.
-        
+
         ServerSocket listener;  // Listens for incoming connections.
-        Socket connection;  // For communication with the connecting program.
+        Socket connection;      // For communication with the connecting program.
 
         /* Accept and process connections forever, or until some error occurs. */
 
@@ -34,9 +32,9 @@ public class ChatServerWithThreads {
             System.out.println("Listening on port " + LISTENING_PORT);
             while (true) {
                 connection = listener.accept();
-                ConnectionHandler h = new ConnectionHandler(connection);
-                h.start();
-                // Accept next connection request and handle it.
+            ConnectionHandler h = new ConnectionHandler(connection);
+            h.start();
+                  // Accept next connection request and handle it.
             }
         }
         catch (Exception e) {
@@ -54,39 +52,59 @@ public class ChatServerWithThreads {
      */
     private static class ConnectionHandler extends Thread {
         private static ArrayList<ConnectionHandler> handlers;
+        static int num =0;
         Socket client;
-        ObjectOutputStream oos;
-        ObjectInputStream ois;
+         String clientAddress;
+          ObjectInputStream ois = null;
+        ObjectOutputStream oos = null;
+      
+
 
         ConnectionHandler(Socket socket) {
             client = socket;
-            if(handlers==null){
-                handlers = new ArrayList<>();
-            }
+            if (handlers == null){
+                handlers = new ArrayList();
+            }  
             handlers.add(this);
-            try{
-                ois = new ObjectInputStream(client.getInputStream()); 
-            }
-            catch(Exception e){}
         }
 
         public void run() {
+            
+            try {
+                ois = new ObjectInputStream(client.getInputStream());
+                oos = new ObjectOutputStream(client.getOutputStream());
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
 
-            String clientAddress = client.getInetAddress().toString();
+
+            clientAddress= "user "+num;
+            num++;
+            
             while(true) {
 	            try {
-                    String message = (String)ois.readObject();
-                    if(!message.equals("disconnect")){
-                        System.out.println("message");
-                    }
-	            	else{
-                        System.out.print("closing connection");
-                        handlers.remove(this);
+                      String message = (String) ois.readObject();
+                      if (message.equals("disconnect")){
+                        System.out.println(message + " Closing Connection");
                         break;
-                    }
+                      } else {
+                        //loop through all the handlers and tell their output streams the message
+                        for (int i = 0; i < handlers.size(); i++){
+                            handlers.get(i).oos.writeObject(clientAddress + " " + message);
+                        }
+                        System.out.println(message);
+                      }
+	            	//your code to send messages goes here.
 	            }
+                 catch(EOFException e){
+                    System.out.println("the client disconnected, bye!!!");
+                    handlers.remove(this);
+                    break;
+                }
 	            catch (Exception e){
-	                System.out.println("Error on connection with: " + clientAddress + ": " + e);
+	                System.out.println("Error on connection with: " 
+	                        + clientAddress + ": " + e);
 	            }
             }
         }
